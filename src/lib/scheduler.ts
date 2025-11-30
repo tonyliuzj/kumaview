@@ -2,6 +2,28 @@ import { getDb } from "./db"
 import type { UptimeKumaSource } from "./types"
 
 let syncInterval: NodeJS.Timeout | null = null
+let isSyncing = false
+let lastSyncTime: Date | null = null
+let currentIntervalSeconds = 300
+
+// Initialize lastSyncTime from DB
+try {
+  const db = getDb()
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get("last_sync_time") as { value: string } | undefined
+  if (row) {
+    lastSyncTime = new Date(row.value)
+  }
+} catch (error) {
+  console.error("Failed to load last sync time from DB:", error)
+}
+
+export function getSyncStatus() {
+  return {
+    isSyncing,
+    lastSyncTime: lastSyncTime?.toISOString() || null,
+    interval: currentIntervalSeconds,
+  }
+}
 
 export async function syncSource(source: UptimeKumaSource) {
   const baseUrl = source.url.replace(/\/$/, "")
@@ -10,6 +32,7 @@ export async function syncSource(source: UptimeKumaSource) {
     "Content-Type": "application/json",
   }
 
+  // Fetch monitor metadata
   const monitorsResponse = await fetch(`${baseUrl}/api/status-page/${source.slug}`, {
     headers,
   })
@@ -22,10 +45,9 @@ export async function syncSource(source: UptimeKumaSource) {
   const db = getDb()
 
   let monitorsUpdated = 0
-  let heartbeatsAdded = 0
 
   // Handle the response structure from Uptime Kuma status page API
-  if (data.config && data.config.statusPagePublished) {
+  if (data.config && data.config.published) {
     const publicGroupList = data.publicGroupList || []
 
     for (const group of publicGroupList) {
@@ -53,39 +75,33 @@ export async function syncSource(source: UptimeKumaSource) {
           monitor.interval || null
         )
         monitorsUpdated++
-
-        // Get heartbeats for this monitor
-        const heartbeats = data.heartbeatList?.[monitor.id] || []
-
-        if (Array.isArray(heartbeats) && heartbeats.length > 0) {
-          const heartbeatStmt = db.prepare(`
-            INSERT OR IGNORE INTO monitor_heartbeats
-            (monitor_id, source_id, status, ping, msg, important, duration, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          `)
-
-          for (const hb of heartbeats) {
-            heartbeatStmt.run(
-              monitor.id,
-              source.id,
-              hb.status,
-              hb.ping || null,
-              hb.msg || null,
-              hb.important ? 1 : 0,
-              hb.duration || null,
-              hb.time
-            )
-            heartbeatsAdded++
-          }
-        }
       }
     }
   }
 
-  return { monitorsUpdated, heartbeatsAdded }
+  // Fetch and cache heartbeat data (ping history)
+  try {
+    const heartbeatResponse = await fetch(`${baseUrl}/api/status-page/heartbeat/${source.slug}`)
+    if (heartbeatResponse.ok) {
+      const heartbeatData = await heartbeatResponse.json()
+      const { setCachedHeartbeats } = await import("./heartbeat-cache")
+      setCachedHeartbeats(source.id, heartbeatData.heartbeatList || {})
+    }
+  } catch (error) {
+    console.error(`Failed to fetch heartbeats for source ${source.id}:`, error)
+  }
+
+  return { monitorsUpdated }
 }
 
 export async function syncAllSources() {
+  if (isSyncing) {
+    console.log("Sync already in progress, skipping...")
+    return []
+  }
+
+  isSyncing = true
+
   const db = getDb()
   const sources = db.prepare("SELECT * FROM uptime_kuma_sources").all() as UptimeKumaSource[]
 
@@ -93,36 +109,62 @@ export async function syncAllSources() {
 
   for (const source of sources) {
     try {
+      // syncSource now fetches monitors AND heartbeat data, updating cache
       const result = await syncSource(source)
       results.push({ source_id: source.id, success: true, ...result })
-      console.log(`Synced source ${source.name}: ${result.monitorsUpdated} monitors, ${result.heartbeatsAdded} heartbeats`)
+      console.log(`Synced source ${source.name}: ${result.monitorsUpdated} monitors`)
     } catch (error: any) {
       console.error(`Error syncing source ${source.id}:`, error)
       results.push({ source_id: source.id, success: false, error: error.message })
     }
   }
 
+  isSyncing = false
+  lastSyncTime = new Date()
+
+  try {
+    const db = getDb()
+    db.prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)")
+      .run("last_sync_time", lastSyncTime.toISOString())
+  } catch (error) {
+    console.error("Failed to save last sync time to DB:", error)
+  }
+
   return results
 }
 
-export function startScheduler(intervalMinutes: number = 5) {
+export function startScheduler(intervalSeconds: number = 300) {
   if (syncInterval) {
-    console.log("Scheduler already running")
-    return
+    console.log("Scheduler already running, stopping old one first")
+    stopScheduler()
   }
 
-  console.log(`Starting scheduler with ${intervalMinutes} minute interval`)
+  // Enforce minimum interval of 30 seconds
+  if (intervalSeconds < 30) {
+    console.log(`Interval ${intervalSeconds}s is below minimum, setting to 30s`)
+    intervalSeconds = 30
+  }
 
-  syncInterval = setInterval(async () => {
+  currentIntervalSeconds = intervalSeconds
+  console.log(`Starting scheduler with ${intervalSeconds} second interval`)
+
+  // Run first sync immediately, then schedule subsequent syncs
+  const runSync = async () => {
     console.log("Running scheduled sync...")
     try {
       await syncAllSources()
     } catch (error) {
       console.error("Scheduled sync failed:", error)
     }
-  }, intervalMinutes * 60 * 1000)
+  }
 
-  syncAllSources().catch(console.error)
+  // Run first sync after 10 seconds
+  setTimeout(async () => {
+    await runSync()
+
+    // After first sync completes, start the regular interval
+    syncInterval = setInterval(runSync, intervalSeconds * 1000)
+  }, 10000)
 }
 
 export function stopScheduler() {

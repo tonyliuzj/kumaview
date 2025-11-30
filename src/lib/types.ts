@@ -37,6 +37,7 @@ export interface MonitorWithStatus extends Monitor {
   uptime_30d?: number
   avg_ping?: number
   last_heartbeat?: string
+  recent_heartbeats?: UptimeKumaHeartbeat[]
 }
 
 export interface UptimeKumaMonitor {

@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, Trash2, RefreshCw, Settings } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Plus, Trash2, RefreshCw, Settings, Clock } from "lucide-react"
 import type { UptimeKumaSource } from "@/lib/types"
 import Link from "next/link"
 
@@ -17,9 +18,13 @@ export default function SettingsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingSource, setEditingSource] = useState<UptimeKumaSource | null>(null)
   const [formData, setFormData] = useState({ name: "", url: "", slug: "" })
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(false)
+  const [autoSyncInterval, setAutoSyncInterval] = useState("300")
+  const [savingSettings, setSavingSettings] = useState(false)
 
   useEffect(() => {
     fetchSources()
+    fetchSettings()
   }, [])
 
   const fetchSources = async () => {
@@ -31,6 +36,50 @@ export default function SettingsPage() {
       console.error("Error fetching sources:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch("/api/settings")
+      const data = await response.json()
+      setAutoSyncEnabled(data.autoSyncEnabled === "true")
+      setAutoSyncInterval(data.autoSyncInterval || "300")
+    } catch (error) {
+      console.error("Error fetching settings:", error)
+    }
+  }
+
+  const saveAutoSyncSettings = async () => {
+    setSavingSettings(true)
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "autoSyncEnabled", value: autoSyncEnabled.toString() }),
+      })
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "autoSyncInterval", value: autoSyncInterval }),
+      })
+
+      // Trigger scheduler update
+      await fetch("/api/scheduler", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: autoSyncEnabled ? "start" : "stop",
+          interval: parseInt(autoSyncInterval),
+        }),
+      })
+
+      alert("Auto-sync settings saved successfully")
+    } catch (error) {
+      console.error("Error saving settings:", error)
+      alert("Failed to save settings")
+    } finally {
+      setSavingSettings(false)
     }
   }
 
@@ -85,7 +134,7 @@ export default function SettingsPage() {
 
       if (response.ok) {
         const result = await response.json()
-        alert(`Sync completed: ${result.results[0].monitorsUpdated} monitors updated, ${result.results[0].heartbeatsAdded} heartbeats added`)
+        alert(`Sync completed: ${result.results[0].monitorsUpdated} monitors updated`)
       } else {
         alert("Sync failed")
       }
@@ -125,6 +174,57 @@ export default function SettingsPage() {
             <Button variant="outline">Back to Dashboard</Button>
           </Link>
         </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Auto-Sync Settings
+            </CardTitle>
+            <CardDescription>
+              Automatically sync monitor data at regular intervals
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="auto-sync">Enable Auto-Sync</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically fetch monitor data from all sources
+                  </p>
+                </div>
+                <Switch
+                  id="auto-sync"
+                  checked={autoSyncEnabled}
+                  onCheckedChange={setAutoSyncEnabled}
+                />
+              </div>
+
+              {autoSyncEnabled && (
+                <div className="space-y-2">
+                  <Label htmlFor="interval">Sync Interval (seconds)</Label>
+                  <Input
+                    id="interval"
+                    type="number"
+                    min="30"
+                    max="3600"
+                    value={autoSyncInterval}
+                    onChange={(e) => setAutoSyncInterval(e.target.value)}
+                    className="w-32"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    How often to sync data (30-3600 seconds)
+                  </p>
+                </div>
+              )}
+
+              <Button onClick={saveAutoSyncSettings} disabled={savingSettings}>
+                {savingSettings ? "Saving..." : "Save Settings"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="mb-6">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -179,7 +279,7 @@ export default function SettingsPage() {
                       required
                     />
                     <p className="text-xs text-muted-foreground">
-                      The slug from your status page URL (e.g., for https://uptime.example.com/status/my-status-page, use "my-status-page")
+                      The slug from your status page URL (e.g., for https://uptime.example.com/status/my-status-page, use my-status-page)
                     </p>
                   </div>
                 </div>

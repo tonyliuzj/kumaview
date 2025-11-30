@@ -33,7 +33,7 @@ function initializeDatabase(database: Database.Database) {
     );
 
     CREATE TABLE IF NOT EXISTS monitors (
-      id INTEGER PRIMARY KEY,
+      id INTEGER NOT NULL,
       source_id INTEGER NOT NULL,
       name TEXT NOT NULL,
       url TEXT,
@@ -41,33 +41,22 @@ function initializeDatabase(database: Database.Database) {
       interval INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (source_id) REFERENCES uptime_kuma_sources(id) ON DELETE CASCADE,
-      UNIQUE(id, source_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS monitor_heartbeats (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      monitor_id INTEGER NOT NULL,
-      source_id INTEGER NOT NULL,
-      status INTEGER NOT NULL,
-      ping INTEGER,
-      msg TEXT,
-      important INTEGER DEFAULT 0,
-      duration INTEGER,
-      timestamp DATETIME NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (monitor_id) REFERENCES monitors(id) ON DELETE CASCADE,
+      PRIMARY KEY (id, source_id),
       FOREIGN KEY (source_id) REFERENCES uptime_kuma_sources(id) ON DELETE CASCADE
     );
 
-    CREATE INDEX IF NOT EXISTS idx_heartbeats_monitor ON monitor_heartbeats(monitor_id);
-    CREATE INDEX IF NOT EXISTS idx_heartbeats_timestamp ON monitor_heartbeats(timestamp);
     CREATE INDEX IF NOT EXISTS idx_monitors_source ON monitors(source_id);
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `)
 
   // Migration: Add slug column if it doesn't exist and migrate data
   try {
-    const columns = database.pragma("table_info(uptime_kuma_sources)")
+    const columns = database.pragma("table_info(uptime_kuma_sources)") as any[]
     const hasSlug = columns.some((col: any) => col.name === "slug")
 
     if (!hasSlug) {
