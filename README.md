@@ -18,19 +18,52 @@ A modern frontend dashboard for monitoring multiple Uptime Kuma instances, built
 - Node.js 18+ installed
 - One or more Uptime Kuma instances with public status pages
 
-### Installation
+### Quick Install (One-Click)
 
-1. Install dependencies:
+Install and set up KumaView with a single command:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/tonyliuzj/kumaview/main/install.sh | bash
+```
+
+Or download and run the installer:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/tonyliuzj/kumaview/main/install.sh -o install.sh && chmod +x install.sh && bash install.sh
+```
+
+The installer will:
+- Check for Node.js 18+ installation
+- Clone the repository
+- Install dependencies
+- Build the application
+- Provide instructions to start the server
+
+### Manual Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/tonyliuzj/kumaview.git
+cd kumaview
+```
+
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Run the development server:
+3. Run the development server:
 ```bash
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
+Or build for production:
+```bash
+npm run build
+npm start
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ### First-Time Setup
 

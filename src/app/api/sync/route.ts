@@ -61,7 +61,7 @@ async function syncSource(source: UptimeKumaSource) {
   let heartbeatsAdded = 0
 
   // Handle the response structure from Uptime Kuma status page API
-  if (data.config && data.config.statusPagePublished) {
+  if (data.config && data.config.published) {
     const publicGroupList = data.publicGroupList || []
 
     for (const group of publicGroupList) {
