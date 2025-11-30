@@ -21,7 +21,9 @@ export default function Home() {
   const [syncIntervalSeconds, setSyncIntervalSeconds] = useState(300)
   const [timeProgress, setTimeProgress] = useState(0)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  
+  const [siteTitle, setSiteTitle] = useState("KumaView")
+  const [siteDescription, setSiteDescription] = useState("Unified Uptime Kuma Dashboard")
+
   // For live animation
   const [tick, setTick] = useState(0)
 
@@ -30,6 +32,7 @@ export default function Home() {
     fetch("/api/init").catch(err => console.error("Failed to initialize scheduler:", err))
 
     fetchData()
+    fetchSettings()
     checkSyncStatus() // Check sync status immediately on mount
 
     // Poll sync status every 5 seconds (reduced from 2 seconds)
@@ -69,6 +72,31 @@ export default function Home() {
       console.error("Error fetching data:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch("/api/settings")
+      const data = await response.json()
+      const title = data.siteTitle || "KumaView"
+      const description = data.siteDescription || "Unified Uptime Kuma Dashboard"
+      setSiteTitle(title)
+      setSiteDescription(description)
+
+      // Update document title and meta description
+      document.title = `${title} - ${description}`
+      const metaDescription = document.querySelector('meta[name="description"]')
+      if (metaDescription) {
+        metaDescription.setAttribute('content', description)
+      } else {
+        const meta = document.createElement('meta')
+        meta.name = 'description'
+        meta.content = description
+        document.head.appendChild(meta)
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error)
     }
   }
 
@@ -157,8 +185,8 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold mb-2 tracking-tight">KumaView</h1>
-              <p className="text-muted-foreground">Unified Uptime Kuma Dashboard</p>
+              <h1 className="text-4xl font-bold mb-2 tracking-tight">{siteTitle}</h1>
+              <p className="text-muted-foreground">{siteDescription}</p>
             </div>
             <Link href="/settings">
               <Button>
@@ -202,7 +230,7 @@ export default function Home() {
       <div className="border-b bg-background sticky top-0 z-10 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold tracking-tight">KumaView</h1>
+            <h1 className="text-xl font-bold tracking-tight">{siteTitle}</h1>
             <div className="h-6 w-[1px] bg-border hidden sm:block" />
             <div className="hidden sm:flex items-center gap-2">
                <Badge variant="outline" className="h-6 gap-1.5 px-2 bg-background/50">
@@ -298,13 +326,18 @@ export default function Home() {
         <div className="space-y-4">
           <Tabs defaultValue="all" className="w-full">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <TabsList>
+                <TabsList className="flex-wrap h-auto">
                     <TabsTrigger value="all">All Monitors</TabsTrigger>
                     <TabsTrigger value="up" className="text-emerald-600 data-[state=active]:text-emerald-700">Operational</TabsTrigger>
                     <TabsTrigger value="down" className="text-rose-600 data-[state=active]:text-rose-700">Down</TabsTrigger>
                     {pendingMonitors > 0 && (
                         <TabsTrigger value="pending" className="text-amber-600 data-[state=active]:text-amber-700">Pending</TabsTrigger>
                     )}
+                    {sources.map((source) => (
+                        <TabsTrigger key={`source-${source.id}`} value={`source-${source.id}`}>
+                            {source.name}
+                        </TabsTrigger>
+                    ))}
                 </TabsList>
 
                 <div className="flex items-center bg-background rounded-lg border p-1">
@@ -395,7 +428,7 @@ export default function Home() {
                              viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"
                          )}>
                             {monitors.filter(m => m.status === 2).map((monitor) => (
-                                <MonitorCard 
+                                <MonitorCard
                                     key={`${monitor.source_id}-${monitor.id}`}
                                     monitor={monitor}
                                     sourceName={getSourceName(monitor.source_id)}
@@ -403,6 +436,35 @@ export default function Home() {
                             ))}
                          </div>
                     </TabsContent>
+                    {sources.map((source) => (
+                        <TabsContent key={`source-content-${source.id}`} value={`source-${source.id}`} className="mt-0">
+                            <div className={cn(
+                                "grid gap-4",
+                                viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"
+                            )}>
+                                {monitors.filter(m => m.source_id === source.id).map((monitor) => (
+                                    <MonitorCard
+                                        key={`${monitor.source_id}-${monitor.id}`}
+                                        monitor={monitor}
+                                        sourceName={source.name}
+                                    />
+                                ))}
+                            </div>
+                            {monitors.filter(m => m.source_id === source.id).length === 0 && (
+                                <Card className="border-dashed">
+                                    <CardContent className="pt-6">
+                                        <div className="text-center py-12">
+                                            <Activity className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                                            <h2 className="text-xl font-semibold mb-2">No Monitors</h2>
+                                            <p className="text-muted-foreground">
+                                                No monitors found for {source.name}
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </TabsContent>
+                    ))}
                 </>
             )}
           </Tabs>

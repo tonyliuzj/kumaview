@@ -21,6 +21,9 @@ export default function SettingsPage() {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(false)
   const [autoSyncInterval, setAutoSyncInterval] = useState("300")
   const [savingSettings, setSavingSettings] = useState(false)
+  const [siteTitle, setSiteTitle] = useState("KumaView")
+  const [siteDescription, setSiteDescription] = useState("Unified Uptime Kuma Dashboard")
+  const [savingSiteSettings, setSavingSiteSettings] = useState(false)
 
   useEffect(() => {
     fetchSources()
@@ -45,8 +48,47 @@ export default function SettingsPage() {
       const data = await response.json()
       setAutoSyncEnabled(data.autoSyncEnabled === "true")
       setAutoSyncInterval(data.autoSyncInterval || "300")
+      const title = data.siteTitle || "KumaView"
+      const description = data.siteDescription || "Unified Uptime Kuma Dashboard"
+      setSiteTitle(title)
+      setSiteDescription(description)
+
+      // Update document title and meta description
+      document.title = `Settings - ${title}`
+      const metaDescription = document.querySelector('meta[name="description"]')
+      if (metaDescription) {
+        metaDescription.setAttribute('content', `Configure ${title} settings and manage Uptime Kuma sources`)
+      } else {
+        const meta = document.createElement('meta')
+        meta.name = 'description'
+        meta.content = `Configure ${title} settings and manage Uptime Kuma sources`
+        document.head.appendChild(meta)
+      }
     } catch (error) {
       console.error("Error fetching settings:", error)
+    }
+  }
+
+  const saveSiteSettings = async () => {
+    setSavingSiteSettings(true)
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "siteTitle", value: siteTitle }),
+      })
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "siteDescription", value: siteDescription }),
+      })
+
+      alert("Site settings saved successfully")
+    } catch (error) {
+      console.error("Error saving site settings:", error)
+      alert("Failed to save site settings")
+    } finally {
+      setSavingSiteSettings(false)
     }
   }
 
@@ -178,6 +220,51 @@ export default function SettingsPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Site Settings
+            </CardTitle>
+            <CardDescription>
+              Customize your dashboard title and description
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="site-title">Site Title</Label>
+                <Input
+                  id="site-title"
+                  value={siteTitle}
+                  onChange={(e) => setSiteTitle(e.target.value)}
+                  placeholder="KumaView"
+                />
+                <p className="text-xs text-muted-foreground">
+                  The title displayed in the header and browser tab
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="site-description">Site Description</Label>
+                <Input
+                  id="site-description"
+                  value={siteDescription}
+                  onChange={(e) => setSiteDescription(e.target.value)}
+                  placeholder="Unified Uptime Kuma Dashboard"
+                />
+                <p className="text-xs text-muted-foreground">
+                  A brief description shown below the title
+                </p>
+              </div>
+
+              <Button onClick={saveSiteSettings} disabled={savingSiteSettings}>
+                {savingSiteSettings ? "Saving..." : "Save Site Settings"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Auto-Sync Settings
             </CardTitle>
@@ -220,7 +307,7 @@ export default function SettingsPage() {
               )}
 
               <Button onClick={saveAutoSyncSettings} disabled={savingSettings}>
-                {savingSettings ? "Saving..." : "Save Settings"}
+                {savingSettings ? "Saving..." : "Save Auto-Sync Settings"}
               </Button>
             </div>
           </CardContent>
