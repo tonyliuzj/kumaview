@@ -7,9 +7,10 @@ import type { MonitorHeartbeat } from "@/lib/types"
 interface PingHistoryChartProps {
   monitorId: number
   sourceId: number
+  height?: number
 }
 
-export function PingHistoryChart({ monitorId, sourceId }: PingHistoryChartProps) {
+export function PingHistoryChart({ monitorId, sourceId, height = 200 }: PingHistoryChartProps) {
   const [heartbeats, setHeartbeats] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -34,7 +35,7 @@ export function PingHistoryChart({ monitorId, sourceId }: PingHistoryChartProps)
 
   if (loading) {
     return (
-      <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+      <div style={{ height }} className="flex items-center justify-center text-muted-foreground">
         Loading chart...
       </div>
     )
@@ -42,7 +43,7 @@ export function PingHistoryChart({ monitorId, sourceId }: PingHistoryChartProps)
 
   if (heartbeats.length === 0) {
     return (
-      <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+      <div style={{ height }} className="flex items-center justify-center text-muted-foreground">
         No ping data available
       </div>
     )
@@ -110,7 +111,7 @@ export function PingHistoryChart({ monitorId, sourceId }: PingHistoryChartProps)
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={height}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
           <XAxis
