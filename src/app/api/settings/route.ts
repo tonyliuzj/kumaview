@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { requireAuth } from "@/lib/middleware"
 
 export async function GET() {
   try {
@@ -20,6 +21,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = await requireAuth(request)
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { key, value } = body

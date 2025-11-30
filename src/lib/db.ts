@@ -1,5 +1,6 @@
 import Database from "better-sqlite3"
 import path from "path"
+import bcrypt from "bcryptjs"
 
 const dbPath = path.join(process.cwd(), "data", "kumaview.db")
 
@@ -52,6 +53,14 @@ function initializeDatabase(database: Database.Database) {
       value TEXT NOT NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `)
 
   // Migration: Add slug column if it doesn't exist and migrate data
@@ -67,6 +76,14 @@ function initializeDatabase(database: Database.Database) {
     }
   } catch (error) {
     // Table might not exist yet, ignore
+  }
+
+  // Create default admin user if none exists
+  const adminCount = database.prepare("SELECT COUNT(*) as count FROM admin_users").get() as { count: number }
+  if (adminCount.count === 0) {
+    const defaultPasswordHash = bcrypt.hashSync("changeme", 10)
+    database.prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)").run("admin", defaultPasswordHash)
+    console.log("Default admin user created (username: admin, password: changeme)")
   }
 }
 

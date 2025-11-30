@@ -1,19 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Trash2, RefreshCw, Settings, Clock } from "lucide-react"
+import { Plus, Trash2, RefreshCw, Settings, Clock, Key, LogOut } from "lucide-react"
 import type { UptimeKumaSource } from "@/lib/types"
 import Link from "next/link"
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [sources, setSources] = useState<UptimeKumaSource[]>([])
   const [loading, setLoading] = useState(true)
+  const [authenticated, setAuthenticated] = useState(false)
   const [syncing, setSyncing] = useState<number | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingSource, setEditingSource] = useState<UptimeKumaSource | null>(null)
@@ -24,11 +27,34 @@ export default function SettingsPage() {
   const [siteTitle, setSiteTitle] = useState("KumaView")
   const [siteDescription, setSiteDescription] = useState("Unified Uptime Kuma Dashboard")
   const [savingSiteSettings, setSavingSiteSettings] = useState(false)
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false)
+  const [credentialsForm, setCredentialsForm] = useState({
+    currentPassword: "",
+    newUsername: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+  const [savingCredentials, setSavingCredentials] = useState(false)
 
   useEffect(() => {
-    fetchSources()
-    fetchSettings()
+    checkAuth()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch("/api/settings")
+      if (response.status === 401) {
+        router.push("/login")
+        return
+      }
+      setAuthenticated(true)
+      fetchSources()
+      fetchSettings()
+    } catch (error) {
+      console.error("Auth check failed:", error)
+      router.push("/login")
+    }
+  }
 
   const fetchSources = async () => {
     try {
@@ -200,7 +226,65 @@ export default function SettingsPage() {
     setDialogOpen(true)
   }
 
-  if (loading) {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" })
+      router.push("/login")
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+  }
+
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (credentialsForm.newPassword && credentialsForm.newPassword !== credentialsForm.confirmPassword) {
+      alert("New passwords do not match")
+      return
+    }
+
+    if (!credentialsForm.newUsername && !credentialsForm.newPassword) {
+      alert("Please provide a new username or password")
+      return
+    }
+
+    setSavingCredentials(true)
+    try {
+      const response = await fetch("/api/auth/change-credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: credentialsForm.currentPassword,
+          newUsername: credentialsForm.newUsername || undefined,
+          newPassword: credentialsForm.newPassword || undefined,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || "Failed to change credentials")
+        setSavingCredentials(false)
+        return
+      }
+
+      alert("Credentials updated successfully. Please log in again.")
+      setCredentialsDialogOpen(false)
+      setCredentialsForm({
+        currentPassword: "",
+        newUsername: "",
+        newPassword: "",
+        confirmPassword: "",
+      })
+      await handleLogout()
+    } catch (error) {
+      console.error("Error changing credentials:", error)
+      alert("Failed to change credentials")
+      setSavingCredentials(false)
+    }
+  }
+
+  if (loading || !authenticated) {
     return <div className="min-h-screen p-8">Loading...</div>
   }
 
@@ -212,9 +296,15 @@ export default function SettingsPage() {
             <h1 className="text-4xl font-bold mb-2">Settings</h1>
             <p className="text-muted-foreground">Manage your Uptime Kuma sources</p>
           </div>
-          <Link href="/">
-            <Button variant="outline">Back to Dashboard</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/">
+              <Button variant="outline">Back to Dashboard</Button>
+            </Link>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         <Card className="mb-6">
@@ -259,6 +349,91 @@ export default function SettingsPage() {
                 {savingSiteSettings ? "Saving..." : "Save Site Settings"}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Admin Credentials
+            </CardTitle>
+            <CardDescription>
+              Change your admin username or password
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog open={credentialsDialogOpen} onOpenChange={setCredentialsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Key className="mr-2 h-4 w-4" />
+                  Change Credentials
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <form onSubmit={handleCredentialsSubmit}>
+                  <DialogHeader>
+                    <DialogTitle>Change Admin Credentials</DialogTitle>
+                    <DialogDescription>
+                      Update your username or password. You will be logged out after changing credentials.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="current-password">Current Password *</Label>
+                      <Input
+                        id="current-password"
+                        type="password"
+                        value={credentialsForm.currentPassword}
+                        onChange={(e) => setCredentialsForm({ ...credentialsForm, currentPassword: e.target.value })}
+                        required
+                        autoComplete="current-password"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-username">New Username (optional)</Label>
+                      <Input
+                        id="new-username"
+                        type="text"
+                        value={credentialsForm.newUsername}
+                        onChange={(e) => setCredentialsForm({ ...credentialsForm, newUsername: e.target.value })}
+                        placeholder="Leave blank to keep current"
+                        autoComplete="username"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="new-password">New Password (optional)</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={credentialsForm.newPassword}
+                        onChange={(e) => setCredentialsForm({ ...credentialsForm, newPassword: e.target.value })}
+                        placeholder="Leave blank to keep current"
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    {credentialsForm.newPassword && (
+                      <div className="grid gap-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          value={credentialsForm.confirmPassword}
+                          onChange={(e) => setCredentialsForm({ ...credentialsForm, confirmPassword: e.target.value })}
+                          required={!!credentialsForm.newPassword}
+                          autoComplete="new-password"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={savingCredentials}>
+                      {savingCredentials ? "Saving..." : "Update Credentials"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
 
