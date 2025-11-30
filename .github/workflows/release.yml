@@ -1,0 +1,80 @@
+name: Upload kumaview.sh to Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  upload-release-asset:
+    name: Upload kumaview.sh to Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get latest release
+        id: get_release
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (releases.length === 0) {
+              console.log("No releases found. Creating a new release...");
+              return;
+            }
+            core.setOutput("release_id", releases[0].id);
+
+      - name: Create a new release if none exists
+        id: create_release
+        if: steps.get_release.outputs.release_id == ''
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'latest',
+              name: 'Latest Release',
+              body: 'This is the latest release.',
+              draft: false,
+              prerelease: false
+            });
+            core.setOutput("release_id", release.id);
+
+      - name: Delete existing kumaview.sh asset (if exists)
+        continue-on-error: true
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const release_id = '${{ steps.get_release.outputs.release_id || steps.create_release.outputs.release_id }}';
+            const { data: assets } = await github.rest.repos.listReleaseAssets({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release_id
+            });
+            for (const asset of assets) {
+              if (asset.name === 'kumaview.sh') {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: asset.id
+                });
+              }
+            }
+
+      - name: Upload kumaview.sh to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: kumaview.sh
+          tag_name: latest
+          token: ${{ secrets.GITHUB_TOKEN }}
