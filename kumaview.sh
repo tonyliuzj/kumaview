@@ -96,8 +96,17 @@ install_kumaview() {
   JWT_SECRET=$(openssl rand -base64 32)
 
   echo "Updating .env.local with configuration..."
-  sed -i "s|^PORT=.*|PORT=$APP_PORT|" "$INSTALL_DIR/.env.local"
-  sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" "$INSTALL_DIR/.env.local"
+  if grep -q "^PORT=" "$INSTALL_DIR/.env.local"; then
+    sed -i "s|^PORT=.*|PORT=$APP_PORT|" "$INSTALL_DIR/.env.local"
+  else
+    echo "PORT=$APP_PORT" >> "$INSTALL_DIR/.env.local"
+  fi
+
+  if grep -q "^JWT_SECRET=" "$INSTALL_DIR/.env.local"; then
+    sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" "$INSTALL_DIR/.env.local"
+  else
+    echo "JWT_SECRET=$JWT_SECRET" >> "$INSTALL_DIR/.env.local"
+  fi
 
   echo "Creating data directory for SQLite database..."
   mkdir -p "$INSTALL_DIR/data"
