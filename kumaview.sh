@@ -12,7 +12,8 @@ show_menu() {
   echo "2) Update"
   echo "3) Uninstall"
   echo "========================================"
-  read -p "Select an option [1-3]: " CHOICE
+  read -r -p "Select an option [1-3]: " CHOICE </dev/tty
+  echo ""
   case $CHOICE in
     1) install_kumaview ;;
     2) update_kumaview ;;
@@ -103,7 +104,7 @@ install_kumaview() {
   echo "Starting KumaView under PM2 on port $APP_PORT..."
   pm2 start "npm run start -- -p $APP_PORT" --name "kumaview"
   pm2 save
-  pm2 startup
+  pm2 startup || true
 
   echo ""
   echo "=========================================="
@@ -123,6 +124,8 @@ install_kumaview() {
   echo "- Restart: pm2 restart kumaview"
   echo "- Stop: pm2 stop kumaview"
   echo "=========================================="
+  echo ""
+  read -p "Press Enter to exit..."
 }
 
 update_kumaview() {
@@ -160,6 +163,8 @@ update_kumaview() {
   echo "Your database has been preserved."
   echo "Visit: http://localhost:$(pm2 info kumaview | grep -oP '(?<=port )\d+' || echo $DEFAULT_PORT)"
   echo "=========================================="
+  echo ""
+  read -p "Press Enter to exit..."
 }
 
 uninstall_kumaview() {
@@ -200,6 +205,8 @@ uninstall_kumaview() {
   echo "  sudo apt remove nodejs"
   echo "  npm uninstall -g pm2"
   echo "=========================================="
+  echo ""
+  read -p "Press Enter to exit..."
 }
 
 show_menu
