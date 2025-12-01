@@ -79,11 +79,18 @@ function initializeDatabase(database: Database.Database) {
   }
 
   // Create default admin user if none exists
-  const adminCount = database.prepare("SELECT COUNT(*) as count FROM admin_users").get() as { count: number }
-  if (adminCount.count === 0) {
-    const defaultPasswordHash = bcrypt.hashSync("changeme", 10)
-    database.prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)").run("admin", defaultPasswordHash)
-    console.log("Default admin user created (username: admin, password: changeme)")
+  try {
+    const adminCount = database.prepare("SELECT COUNT(*) as count FROM admin_users").get() as { count: number }
+    if (adminCount.count === 0) {
+      const defaultPasswordHash = bcrypt.hashSync("changeme", 10)
+      database.prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)").run("admin", defaultPasswordHash)
+      console.log("Default admin user created (username: admin, password: changeme)")
+    }
+  } catch (error: any) {
+    // Ignore UNIQUE constraint errors - admin user already exists
+    if (error.code !== 'SQLITE_CONSTRAINT_UNIQUE') {
+      throw error
+    }
   }
 }
 
