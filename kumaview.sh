@@ -35,7 +35,7 @@ install_kumaview() {
     MAJOR=${VERSION%%.*}
     if [ "$MAJOR" -lt 18 ]; then
       echo "Node.js v$VERSION detected (<18)."
-      read -p "Do you want to install Node.js 22? (y/n): " INSTALL_22
+      read -r -p "Do you want to install Node.js 22? (y/n): " INSTALL_22 </dev/tty
       if [[ "$INSTALL_22" =~ ^[Yy]$ ]]; then
         echo "Installing Node.js 22..."
         curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
@@ -89,7 +89,7 @@ install_kumaview() {
     touch "$INSTALL_DIR/.env.local"
   fi
 
-  read -p "Enter port number (default: $DEFAULT_PORT): " APP_PORT
+  read -r -p "Enter port number (default: $DEFAULT_PORT): " APP_PORT </dev/tty
   APP_PORT=${APP_PORT:-$DEFAULT_PORT}
 
   echo "Creating data directory for SQLite database..."
@@ -125,7 +125,7 @@ install_kumaview() {
   echo "- Stop: pm2 stop kumaview"
   echo "=========================================="
   echo ""
-  read -p "Press Enter to exit..."
+  read -r -p "Press Enter to exit..." </dev/tty
 }
 
 update_kumaview() {
@@ -164,7 +164,7 @@ update_kumaview() {
   echo "Visit: http://localhost:$(pm2 info kumaview | grep -oP '(?<=port )\d+' || echo $DEFAULT_PORT)"
   echo "=========================================="
   echo ""
-  read -p "Press Enter to exit..."
+  read -r -p "Press Enter to exit..." </dev/tty
 }
 
 uninstall_kumaview() {
@@ -178,7 +178,7 @@ uninstall_kumaview() {
   fi
 
   if [ -d "$INSTALL_DIR" ]; then
-    read -p "Do you want to backup the database before uninstalling? (y/n): " BACKUP_DB
+    read -r -p "Do you want to backup the database before uninstalling? (y/n): " BACKUP_DB </dev/tty
     if [[ "$BACKUP_DB" =~ ^[Yy]$ ]]; then
       if [ -f "$INSTALL_DIR/data/kumaview.db" ]; then
         BACKUP_PATH="$HOME/kumaview_backup_$(date +%Y%m%d_%H%M%S).db"
@@ -206,7 +206,7 @@ uninstall_kumaview() {
   echo "  npm uninstall -g pm2"
   echo "=========================================="
   echo ""
-  read -p "Press Enter to exit..."
+  read -r -p "Press Enter to exit..." </dev/tty
 }
 
 show_menu
