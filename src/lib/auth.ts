@@ -7,6 +7,13 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "your-secret-key-change-this-in-production"
 )
 
+// Log JWT_SECRET status on module load
+if (!process.env.JWT_SECRET) {
+  console.warn("⚠️  WARNING: JWT_SECRET not set in environment variables, using default (insecure)")
+} else {
+  console.log("✓ JWT_SECRET loaded from environment")
+}
+
 export interface AdminUser {
   id: number
   username: string
