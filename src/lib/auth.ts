@@ -62,7 +62,7 @@ export async function setAuthCookie(token: string) {
   const cookieStore = await cookies()
   cookieStore.set("auth_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // Set to false to allow HTTP in production (use true only if behind HTTPS/reverse proxy)
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",
