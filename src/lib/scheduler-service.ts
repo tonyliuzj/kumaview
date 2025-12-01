@@ -68,7 +68,6 @@ class SchedulerService {
   async start(config?: Partial<SchedulerConfig>) {
     // Stop any existing scheduler first to prevent duplicates
     if (this.isRunning || this.intervalId || this.timeoutId) {
-      console.log("Scheduler is already running, stopping it first")
       this.stop()
     }
 
@@ -79,22 +78,18 @@ class SchedulerService {
 
     // Enforce minimum interval of 30 seconds
     if (this.config.intervalSeconds < 30) {
-      console.log(`Interval ${this.config.intervalSeconds}s is below minimum, setting to 30s`)
       this.config.intervalSeconds = 30
       this.saveConfig()
     }
 
     this.isRunning = true
-    console.log(`Starting scheduler with ${this.config.intervalSeconds} second interval`)
 
     // Run first sync immediately, then schedule subsequent syncs
     const runSync = async () => {
       if (!this.config.enabled) {
-        console.log("Scheduler is disabled, skipping sync")
         return
       }
 
-      console.log("Running scheduled sync...")
       this.lastRun = new Date()
       try {
         await this.syncAllSources()
@@ -123,7 +118,6 @@ class SchedulerService {
       this.intervalId = null
     }
     this.isRunning = false
-    console.log("Scheduler stopped")
   }
 
   async syncAllSources(): Promise<SyncResult[]> {
@@ -188,7 +182,6 @@ class SchedulerService {
 
     // Restart scheduler if interval changed and scheduler is running
     if (this.isRunning && newConfig.intervalSeconds && newConfig.intervalSeconds !== oldInterval) {
-      console.log(`Interval changed from ${oldInterval}s to ${newConfig.intervalSeconds}s, restarting scheduler`)
       this.stop()
       this.start()
     }
