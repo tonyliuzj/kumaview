@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { requireAuth } from "@/lib/middleware"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = await requireAuth(request)
+  if (authError) return authError
+
   try {
     const db = getDb()
     const settings = db.prepare("SELECT * FROM settings").all() as Array<{ key: string; value: string }>

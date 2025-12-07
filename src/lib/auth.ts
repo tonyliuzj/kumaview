@@ -7,6 +7,11 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "your-secret-key-change-this-in-production"
 )
 
+// Log JWT_SECRET status on module load
+if (!process.env.JWT_SECRET) {
+  console.warn("⚠️  WARNING: JWT_SECRET not set in environment variables, using default (insecure)")
+}
+
 export interface AdminUser {
   id: number
   username: string
@@ -55,7 +60,7 @@ export async function setAuthCookie(token: string) {
   const cookieStore = await cookies()
   cookieStore.set("auth_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false, // Set to false to allow HTTP in production (use true only if behind HTTPS/reverse proxy)
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",

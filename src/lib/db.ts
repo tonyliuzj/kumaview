@@ -84,9 +84,10 @@ function initializeDatabase(database: Database.Database) {
     if (adminCount.count === 0) {
       const defaultPasswordHash = bcrypt.hashSync("changeme", 10)
       database.prepare("INSERT INTO admin_users (username, password_hash) VALUES (?, ?)").run("admin", defaultPasswordHash)
-      console.log("Default admin user created (username: admin, password: changeme)")
+      console.log("✓ Default admin user created (username: admin, password: changeme)")
     }
   } catch (error: any) {
+    console.error("Error creating default admin user:", error)
     // Ignore UNIQUE constraint errors - admin user already exists
     if (error.code !== 'SQLITE_CONSTRAINT_UNIQUE') {
       throw error

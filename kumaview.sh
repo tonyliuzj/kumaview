@@ -92,6 +92,22 @@ install_kumaview() {
   read -r -p "Enter port number (default: $DEFAULT_PORT): " APP_PORT </dev/tty
   APP_PORT=${APP_PORT:-$DEFAULT_PORT}
 
+  echo "Generating JWT secret..."
+  JWT_SECRET=$(openssl rand -base64 32)
+
+  echo "Updating .env.local with configuration..."
+  if grep -q "^PORT=" "$INSTALL_DIR/.env.local"; then
+    sed -i "s|^PORT=.*|PORT=$APP_PORT|" "$INSTALL_DIR/.env.local"
+  else
+    echo "PORT=$APP_PORT" >> "$INSTALL_DIR/.env.local"
+  fi
+
+  if grep -q "^JWT_SECRET=" "$INSTALL_DIR/.env.local"; then
+    sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" "$INSTALL_DIR/.env.local"
+  else
+    echo "JWT_SECRET=$JWT_SECRET" >> "$INSTALL_DIR/.env.local"
+  fi
+
   echo "Creating data directory for SQLite database..."
   mkdir -p "$INSTALL_DIR/data"
 

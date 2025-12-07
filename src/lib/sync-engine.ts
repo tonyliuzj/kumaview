@@ -259,7 +259,6 @@ class SyncEngine {
         lastError = error
         if (attempt < maxRetries) {
           const delay = baseDelay * Math.pow(2, attempt - 1) // Exponential backoff
-          console.log(`Sync attempt ${attempt} failed, retrying in ${delay}ms:`, error.message)
           await new Promise(resolve => setTimeout(resolve, delay))
         }
       }
