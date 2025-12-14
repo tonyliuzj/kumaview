@@ -23,13 +23,7 @@ A modern frontend dashboard for monitoring multiple Uptime Kuma instances, built
 Install and set up KumaView with a single command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/tonyliuzj/kumaview/main/kumaview.sh | bash
-```
-
-Or download and run the installer:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/tonyliuzj/kumaview/main/kumaview.sh -o kumaview.sh && chmod +x kumaview.sh && bash kumaview.sh
+curl -sSL https://github.com/tonyliuzj/kumaview/releases/latest/download/kumaview.sh -o kumaview.sh && chmod +x kumaview.sh && bash kumaview.sh
 ```
 
 The installer will:
