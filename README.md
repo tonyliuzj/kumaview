@@ -26,13 +26,6 @@ Install and set up KumaView with a single command:
 curl -sSL https://github.com/tonyliuzj/kumaview/releases/latest/download/kumaview.sh -o kumaview.sh && chmod +x kumaview.sh && bash kumaview.sh
 ```
 
-The installer will:
-- Check for Node.js 18+ installation
-- Clone the repository
-- Install dependencies
-- Build the application
-- Provide instructions to start the server
-
 ### Manual Installation
 
 1. Clone the repository:
