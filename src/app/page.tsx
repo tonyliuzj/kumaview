@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +26,38 @@ export default function Home() {
 
   // For live animation
   const [tick, setTick] = useState(0)
+
+  const checkSyncStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/sync-status")
+      const data = await response.json()
+
+      const wasSyncing = autoSyncing
+      const isSyncing = data.syncEngine?.isSyncing || false
+      const lastRun = data.scheduler?.lastRun
+      const lastSuccessfulSync = data.health?.lastSuccessfulSync
+      const intervalSeconds = data.scheduler?.config?.intervalSeconds
+
+      setAutoSyncing(isSyncing)
+
+      // Use lastRun from scheduler, or fall back to lastSuccessfulSync from health check
+      const syncTime = lastRun || lastSuccessfulSync
+      if (syncTime) {
+        setLastSyncTime(syncTime)
+      }
+
+      if (intervalSeconds) {
+        setSyncIntervalSeconds(intervalSeconds)
+      }
+
+      // If sync just finished, refresh data
+      if (wasSyncing && !isSyncing) {
+        await fetchData()
+      }
+    } catch (error) {
+      console.error("Error checking sync status:", error)
+    }
+  }, [autoSyncing])
 
   useEffect(() => {
     // Initialize scheduler on app load
@@ -56,7 +88,7 @@ export default function Home() {
       clearInterval(statusInterval)
       clearInterval(progressInterval)
     }
-  }, [lastSyncTime, syncIntervalSeconds])
+  }, [lastSyncTime, syncIntervalSeconds, checkSyncStatus])
 
   const fetchData = async () => {
     try {
@@ -97,38 +129,6 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error fetching settings:", error)
-    }
-  }
-
-  const checkSyncStatus = async () => {
-    try {
-      const response = await fetch("/api/sync-status")
-      const data = await response.json()
-
-      const wasSyncing = autoSyncing
-      const isSyncing = data.syncEngine?.isSyncing || false
-      const lastRun = data.scheduler?.lastRun
-      const lastSuccessfulSync = data.health?.lastSuccessfulSync
-      const intervalSeconds = data.scheduler?.config?.intervalSeconds
-
-      setAutoSyncing(isSyncing)
-
-      // Use lastRun from scheduler, or fall back to lastSuccessfulSync from health check
-      const syncTime = lastRun || lastSuccessfulSync
-      if (syncTime) {
-        setLastSyncTime(syncTime)
-      }
-
-      if (intervalSeconds) {
-        setSyncIntervalSeconds(intervalSeconds)
-      }
-
-      // If sync just finished, refresh data
-      if (wasSyncing && !isSyncing) {
-        await fetchData()
-      }
-    } catch (error) {
-      console.error("Error checking sync status:", error)
     }
   }
 

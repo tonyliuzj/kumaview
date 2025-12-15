@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,11 +36,7 @@ export default function SettingsPage() {
   })
   const [savingCredentials, setSavingCredentials] = useState(false)
 
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const response = await fetch("/api/settings")
       if (response.status === 401) {
@@ -54,7 +50,11 @@ export default function SettingsPage() {
       console.error("Auth check failed:", error)
       router.push("/login")
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   const fetchSources = async () => {
     try {

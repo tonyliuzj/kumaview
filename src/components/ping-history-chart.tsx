@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import type { MonitorHeartbeat } from "@/lib/types"
 
@@ -14,11 +14,7 @@ export function PingHistoryChart({ monitorId, sourceId, height = 200 }: PingHist
   const [heartbeats, setHeartbeats] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchHeartbeats()
-  }, [monitorId, sourceId])
-
-  const fetchHeartbeats = async () => {
+  const fetchHeartbeats = useCallback(async () => {
     try {
       const response = await fetch(`/api/heartbeats?monitor_id=${monitorId}&source_id=${sourceId}`)
 
@@ -31,7 +27,11 @@ export function PingHistoryChart({ monitorId, sourceId, height = 200 }: PingHist
     } finally {
       setLoading(false)
     }
-  }
+  }, [monitorId, sourceId])
+
+  useEffect(() => {
+    fetchHeartbeats()
+  }, [fetchHeartbeats])
 
   if (loading) {
     return (
