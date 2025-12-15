@@ -166,6 +166,30 @@ update_kumaview() {
   echo "Updating dependencies..."
   npm install
 
+  echo "Checking JWT_SECRET configuration..."
+  if [ ! -f "$INSTALL_DIR/.env.local" ]; then
+    echo "Warning: .env.local not found. Creating from example..."
+    if [ -f "$INSTALL_DIR/example.env.local" ]; then
+      cp "$INSTALL_DIR/example.env.local" "$INSTALL_DIR/.env.local"
+    else
+      touch "$INSTALL_DIR/.env.local"
+    fi
+  fi
+
+  # Check if JWT_SECRET is missing or empty
+  if ! grep -q "^JWT_SECRET=.\\+" "$INSTALL_DIR/.env.local"; then
+    echo "JWT_SECRET not found or empty. Generating new JWT secret..."
+    JWT_SECRET=$(openssl rand -base64 32)
+    if grep -q "^JWT_SECRET=" "$INSTALL_DIR/.env.local"; then
+      sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$JWT_SECRET|" "$INSTALL_DIR/.env.local"
+    else
+      echo "JWT_SECRET=$JWT_SECRET" >> "$INSTALL_DIR/.env.local"
+    fi
+    echo "JWT_SECRET added to .env.local"
+  else
+    echo "JWT_SECRET already configured."
+  fi
+
   echo "Rebuilding the app..."
   npm run build
 
