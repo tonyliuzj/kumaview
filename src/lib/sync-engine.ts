@@ -165,11 +165,14 @@ class SyncEngine {
     // Handle the response structure from Uptime Kuma status page API
     if (data.config && data.config.published) {
       const publicGroupList = data.publicGroupList || []
+      const remoteMonitorIds = new Set<number>()
 
       for (const group of publicGroupList) {
         const monitorList = group.monitorList || []
 
         for (const monitor of monitorList) {
+          remoteMonitorIds.add(monitor.id)
+
           // Insert or update monitor
           const monitorStmt = db.prepare(`
             INSERT INTO monitors (id, source_id, name, url, type, interval, updated_at)
@@ -192,6 +195,24 @@ class SyncEngine {
           )
           monitorsUpdated++
         }
+      }
+
+      // Delete monitors that are no longer present in the API response
+      if (remoteMonitorIds.size > 0) {
+        const placeholders = Array.from(remoteMonitorIds).map(() => '?').join(',')
+        const deleteStmt = db.prepare(`
+          DELETE FROM monitors
+          WHERE source_id = ?
+          AND id NOT IN (${placeholders})
+        `)
+        deleteStmt.run(source.id, ...Array.from(remoteMonitorIds))
+      } else {
+        // If no monitors exist in the API, delete all monitors for this source
+        const deleteAllStmt = db.prepare(`
+          DELETE FROM monitors
+          WHERE source_id = ?
+        `)
+        deleteAllStmt.run(source.id)
       }
     }
 
