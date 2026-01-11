@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Separator } from "@/components/ui/separator"
 import { Settings, RefreshCw, Activity, Clock, TrendingUp, Zap, CheckCircle2, XCircle, AlertCircle, LayoutGrid, List } from "lucide-react"
 import type { MonitorWithStatus, UptimeKumaSource } from "@/lib/types"
 import Link from "next/link"
@@ -165,15 +167,52 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-8 flex items-center justify-center bg-muted/10">
-        <div className="text-center space-y-4">
-          <div className="relative">
-             <RefreshCw className="h-12 w-12 animate-spin mx-auto text-primary" />
-             <div className="absolute inset-0 flex items-center justify-center">
-                <Zap className="h-4 w-4 text-primary animate-pulse" />
-             </div>
+      <div className="min-h-screen bg-muted/10">
+        <div className="border-b bg-background">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <Skeleton className="h-8 w-32" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-20" />
+              <Skeleton className="h-9 w-9" />
+            </div>
           </div>
-          <p className="text-muted-foreground animate-pulse font-medium">Loading dashboard...</p>
+        </div>
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16 mb-2" />
+                  <Skeleton className="h-3 w-32" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full max-w-md" />
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i}>
+                  <div className="p-4 sm:p-5 space-y-4">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-8 w-full" />
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {[...Array(4)].map((_, j) => (
+                        <div key={j} className="space-y-2">
+                          <Skeleton className="h-3 w-16" />
+                          <Skeleton className="h-4 w-12" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -231,7 +270,7 @@ export default function Home() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold tracking-tight">{siteTitle}</h1>
-            <div className="h-6 w-[1px] bg-border hidden sm:block" />
+            <Separator orientation="vertical" className="h-6 hidden sm:block" />
             <div className="hidden sm:flex items-center gap-2">
                <Badge variant="outline" className="h-6 gap-1.5 px-2 bg-background/50">
                  <span className="relative flex h-2 w-2">
@@ -278,7 +317,7 @@ export default function Home() {
         
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-background shadow-sm border-l-4 border-l-primary">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Monitors</CardTitle>
               <Activity className="h-4 w-4 text-primary" />
@@ -288,7 +327,7 @@ export default function Home() {
               <p className="text-xs text-muted-foreground mt-1">Active monitoring targets</p>
             </CardContent>
           </Card>
-          <Card className="bg-background shadow-sm border-l-4 border-l-emerald-500">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Operational</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -300,7 +339,7 @@ export default function Home() {
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-background shadow-sm border-l-4 border-l-rose-500">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Down</CardTitle>
               <XCircle className="h-4 w-4 text-rose-500" />
@@ -310,7 +349,7 @@ export default function Home() {
               <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
             </CardContent>
           </Card>
-           <Card className="bg-background shadow-sm border-l-4 border-l-amber-500">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
               <AlertCircle className="h-4 w-4 text-amber-500" />

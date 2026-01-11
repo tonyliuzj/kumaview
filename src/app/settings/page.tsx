@@ -8,7 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Trash2, RefreshCw, Settings, Clock, Key, LogOut } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Plus, Trash2, RefreshCw, Settings, Clock, Key, LogOut, AlertCircle, CheckCircle2 } from "lucide-react"
 import type { UptimeKumaSource } from "@/lib/types"
 import Link from "next/link"
 
@@ -35,6 +38,8 @@ export default function SettingsPage() {
     confirmPassword: "",
   })
   const [savingCredentials, setSavingCredentials] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
 
   const checkAuth = useCallback(async () => {
     try {
@@ -97,6 +102,8 @@ export default function SettingsPage() {
 
   const saveSiteSettings = async () => {
     setSavingSiteSettings(true)
+    setSuccessMessage("")
+    setErrorMessage("")
     try {
       await fetch("/api/settings", {
         method: "PUT",
@@ -109,10 +116,12 @@ export default function SettingsPage() {
         body: JSON.stringify({ key: "siteDescription", value: siteDescription }),
       })
 
-      alert("Site settings saved successfully")
+      setSuccessMessage("Site settings saved successfully")
+      setTimeout(() => setSuccessMessage(""), 3000)
     } catch (error) {
       console.error("Error saving site settings:", error)
-      alert("Failed to save site settings")
+      setErrorMessage("Failed to save site settings")
+      setTimeout(() => setErrorMessage(""), 5000)
     } finally {
       setSavingSiteSettings(false)
     }
@@ -285,7 +294,31 @@ export default function SettingsPage() {
   }
 
   if (loading || !authenticated) {
-    return <div className="min-h-screen p-8">Loading...</div>
+    return (
+      <div className="min-h-screen p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <Skeleton className="h-10 w-40" />
+          </div>
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-96 mt-2" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -306,6 +339,20 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
+
+        {successMessage && (
+          <Alert className="mb-6">
+            <CheckCircle2 className="h-4 w-4" />
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        {errorMessage && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
 
         <Card className="mb-6">
           <CardHeader>
@@ -351,6 +398,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Separator className="my-6" />
 
         <Card className="mb-6">
           <CardHeader>
@@ -437,6 +486,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        <Separator className="my-6" />
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -487,6 +538,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Separator className="my-6" />
 
         <div className="mb-6">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

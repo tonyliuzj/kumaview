@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, Lock } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -44,11 +46,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Admin Login</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-muted/10 p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-center mb-2">
+            <div className="bg-primary/10 p-3 rounded-full">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+          <CardDescription className="text-center">
             Enter your credentials to access the admin panel
           </CardDescription>
         </CardHeader>
@@ -64,6 +71,7 @@ export default function LoginPage() {
                 required
                 autoComplete="username"
                 disabled={loading}
+                placeholder="Enter your username"
               />
             </div>
             <div className="space-y-2">
@@ -76,12 +84,14 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 disabled={loading}
+                placeholder="Enter your password"
               />
             </div>
             {error && (
-              <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950 p-3 rounded-md">
-                {error}
-              </div>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Logging in..." : "Login"}

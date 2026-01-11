@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { MonitorWithStatus } from "@/lib/types"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -111,97 +112,89 @@ export function MonitorCard({ monitor, sourceName }: MonitorCardProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Card className={cn(
-          "overflow-hidden transition-all duration-200 hover:shadow-lg border-l-4 cursor-pointer group relative",
-          monitor.status === 1 ? "border-l-emerald-500" : 
-          monitor.status === 0 ? "border-l-rose-500" : 
-          monitor.status === 2 ? "border-l-amber-500" : "border-l-slate-500"
-        )}>
-          <div className="p-4 sm:p-5">
-            {/* Hover overlay hint */}
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm shadow-sm">
-                <BarChart3 className="h-3 w-3 mr-1" /> View Details
+        <Card className="overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer group relative">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-base truncate flex items-center gap-2">
+                  {getStatusIcon(monitor.status)}
+                  {monitor.name}
+                </CardTitle>
+                <CardDescription className="flex items-center gap-1.5 mt-1.5 truncate">
+                  <Globe className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate" title={monitor.url}>
+                    {monitor.url || "No URL provided"}
+                  </span>
+                </CardDescription>
+              </div>
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "shrink-0 h-6 px-2 text-[10px] font-medium uppercase tracking-wider",
+                  monitor.status === 1 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" :
+                  monitor.status === 0 ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800" :
+                  monitor.status === 2 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800" :
+                  "bg-slate-100 text-slate-600"
+                )}
+              >
+                {getStatusText(monitor.status)}
               </Badge>
             </div>
+          </CardHeader>
 
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <h3 className="text-base font-semibold truncate leading-none">
-                    {monitor.name}
-                  </h3>
-                  <Badge 
-                    variant="secondary" 
-                    className={cn(
-                      "h-5 px-1.5 text-[10px] font-medium uppercase tracking-wider",
-                      monitor.status === 1 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : 
-                      monitor.status === 0 ? "bg-rose-500/10 text-rose-600 dark:text-rose-400" : 
-                      "bg-slate-100 text-slate-600"
-                    )}
-                  >
-                    {getStatusText(monitor.status)}
-                  </Badge>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Globe className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate hover:underline" title={monitor.url}>
-                      {monitor.url || "No URL provided"}
-                    </span>
-                  </div>
-                  <div className="hidden sm:block w-1 h-1 rounded-full bg-border" />
-                  <span className="truncate opacity-75">
-                    Source: {sourceName}
-                  </span>
-                </div>
-              </div>
-            </div>
-
+          <CardContent className="space-y-4">
             {/* Status Bar Visualization */}
-            <div className="mb-6">
-               {renderStatusBars()}
+            <div>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">24-Hour Status</p>
+              {renderStatusBars()}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Separator />
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                   <Clock className="h-3 w-3" /> 24h Uptime
-                </span>
-                <p className="text-sm font-semibold tabular-nums">
+                </p>
+                <p className="text-sm font-bold tabular-nums">
                   {formatUptime(monitor.uptime_24h)}
                 </p>
               </div>
-              
+
               <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                   <Clock className="h-3 w-3" /> 30d Uptime
-                </span>
-                <p className="text-sm font-semibold tabular-nums">
+                </p>
+                <p className="text-sm font-bold tabular-nums">
                   {formatUptime(monitor.uptime_30d)}
                 </p>
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                   <Zap className="h-3 w-3" /> Avg Ping
-                </span>
-                <p className="text-sm font-semibold tabular-nums">
+                </p>
+                <p className="text-sm font-bold tabular-nums">
                   {formatPing(monitor.avg_ping)}
                 </p>
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                   <Activity className="h-3 w-3" /> Last Check
-                </span>
-                <p className="text-sm font-semibold tabular-nums truncate">
+                </p>
+                <p className="text-sm font-bold tabular-nums truncate">
                   {formatLocalTime(monitor.last_heartbeat)}
                 </p>
               </div>
             </div>
-          </div>
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+              <span className="inline-flex items-center gap-1">
+                Source: <span className="font-medium">{sourceName}</span>
+              </span>
+            </div>
+          </CardContent>
         </Card>
       </DialogTrigger>
       

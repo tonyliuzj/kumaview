@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Card } from "@/components/ui/card"
+import { TrendingUp, TrendingDown, Activity } from "lucide-react"
 import type { MonitorHeartbeat } from "@/lib/types"
 
 interface PingHistoryChartProps {
@@ -35,8 +38,22 @@ export function PingHistoryChart({ monitorId, sourceId, height = 200 }: PingHist
 
   if (loading) {
     return (
-      <div style={{ height }} className="flex items-center justify-center text-muted-foreground">
-        Loading chart...
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-5 w-12" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-5 w-12" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-5 w-12" />
+          </div>
+        </div>
+        <Skeleton className="w-full" style={{ height }} />
       </div>
     )
   }
@@ -96,19 +113,28 @@ export function PingHistoryChart({ monitorId, sourceId, height = 200 }: PingHist
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4 text-sm">
-        <div>
-          <p className="text-muted-foreground">Avg Ping</p>
-          <p className="font-semibold">{avgPing}ms</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Min Ping</p>
-          <p className="font-semibold text-green-600">{minPing}ms</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Max Ping</p>
-          <p className="font-semibold text-red-600">{maxPing}ms</p>
-        </div>
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="p-3 bg-muted/50">
+          <div className="flex items-center gap-2 mb-1">
+            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground font-medium">Avg Ping</p>
+          </div>
+          <p className="text-lg font-bold tabular-nums">{avgPing}ms</p>
+        </Card>
+        <Card className="p-3 bg-emerald-500/5 border-emerald-200 dark:border-emerald-900">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingDown className="h-3.5 w-3.5 text-emerald-600" />
+            <p className="text-xs text-muted-foreground font-medium">Min Ping</p>
+          </div>
+          <p className="text-lg font-bold text-emerald-600 tabular-nums">{minPing}ms</p>
+        </Card>
+        <Card className="p-3 bg-rose-500/5 border-rose-200 dark:border-rose-900">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp className="h-3.5 w-3.5 text-rose-600" />
+            <p className="text-xs text-muted-foreground font-medium">Max Ping</p>
+          </div>
+          <p className="text-lg font-bold text-rose-600 tabular-nums">{maxPing}ms</p>
+        </Card>
       </div>
 
       <ResponsiveContainer width="100%" height={height}>
